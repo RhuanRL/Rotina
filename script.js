@@ -1526,5 +1526,3 @@ function executeSpotlightAction() {
         processJarvisCommand(input);
     }
 }
-    currentBunkerBlockIndex = null;
-}
