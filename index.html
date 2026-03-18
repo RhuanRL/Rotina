@@ -9,7 +9,7 @@
     <title>CEO OS // Rotina</title>
     <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=2">
+    <link rel="stylesheet" href="style.css?v=3">
 </head>
 <body>
 
@@ -47,6 +47,13 @@
                         <div class="kpi-mini-grid" id="kpi-container">
                             <!-- Injetado dinamicamente -->
                         </div>
+                        <button class="jarvis-btn" id="fab-mic" onclick="toggleJarvis()" title="Ditar Tarefa p/ Jarvis">
+                            <i class="ri-mic-line" style="font-size:1.5rem;"></i>
+                            <div style="display:flex; flex-direction:column; align-items:flex-start;">
+                                <span style="font-size:0.75rem; text-transform:uppercase; letter-spacing:0.05em; font-weight:800; opacity:0.8;">Modo Jarvis</span>
+                                <span style="font-size:0.9rem; font-weight:500;">Ditar Comando</span>
+                            </div>
+                        </button>
                     </div>
                 </div>
 
@@ -225,11 +232,6 @@
             
         </main>
     </div>
-
-    <!-- Jarvis Mic -->
-    <button class="fab-mic" id="fab-mic" onclick="toggleJarvis()" title="Jarvis: Comando de Voz">
-        <i class="ri-mic-line"></i>
-    </button>
 
     <script>
       if ('serviceWorker' in navigator) {
