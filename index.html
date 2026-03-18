@@ -9,7 +9,7 @@
     <title>CEO OS // Rotina</title>
     <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=3">
+    <link rel="stylesheet" href="style.css?v=6">
 </head>
 <body>
 
@@ -231,6 +231,29 @@
             </div>
             
         </main>
+    </div>
+
+    <!-- Bunker Mode Overlay -->
+    <div class="bunker-overlay" id="bunker-overlay">
+        <button class="bunker-close" onclick="closeBunker()"><i class="ri-close-line"></i> Sair do Bunker</button>
+        <div class="bunker-content">
+            <div class="bunker-tag" id="bunker-tag">FOCO ABSOLUTO</div>
+            <h1 class="bunker-title" id="bunker-title">Titulo da Tarefa</h1>
+            <div class="bunker-company" id="bunker-company">Empresa</div>
+            
+            <div class="bunker-timer" id="bunker-timer">00:00</div>
+            
+            <div class="bunker-subs" id="bunker-subs">
+                <!-- Subtasks injetadas via JS -->
+            </div>
+            
+            <div style="display:flex; gap: 1rem; margin-top: 2rem;">
+                <button class="btn btn-outline bunker-btn" onclick="addTimeBunker(15)">+15 Mins</button>
+                <button class="btn-primary bunker-btn" id="bunker-btn-done" onclick="markBunkerDone()">
+                    <i class="ri-check-double-line"></i> Concluir Bloco
+                </button>
+            </div>
+        </div>
     </div>
 
     <script>

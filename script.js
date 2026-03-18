@@ -690,7 +690,7 @@ function renderRoutineTracker() {
     
     let htmlSteps = '';
     
-    appData.activeRoutine.forEach(block => {
+    appData.activeRoutine.forEach((block, index) => {
         let stateClass = 'state-future';
         let statusText = 'NA FILA';
         let statusColor = 'var(--text-secondary)';
@@ -721,7 +721,7 @@ function renderRoutineTracker() {
         let timeLabel = `${formatTime(block.start)} - ${formatTime(block.end)}`;
         
         htmlSteps += `
-            <div class="tracker-step ${stateClass}">
+            <div class="tracker-step ${stateClass}" ondblclick="openBunker(${index})" style="cursor:pointer;" title="Duplo-clique para Foco Absoluto (Bunker)">
                 <div class="ts-time">${timeLabel}</div>
                 <div class="ts-title" title="${title}">${title}</div>
                 <div class="ts-status" style="color:${statusColor}">${statusText}</div>
@@ -1267,3 +1267,117 @@ function showToast(msg) {
     setTimeout(() => { t.style.opacity = '0'; }, 3000);
 }
 
+// ==== BUNKER MODE (FOCO ABSOLUTO) ====
+let bunkerInterval = null;
+let currentBunkerBlockIndex = null;
+let bunkerMinsRemaining = 0;
+let bunkerSecsRemaining = 0;
+
+function openBunker(blockIndex) {
+    if(!appData.activeRoutine || !appData.activeRoutine[blockIndex]) return;
+    
+    const block = appData.activeRoutine[blockIndex];
+    if(block.type !== 'task') {
+        showToast("Bunker Mode é apenas para Blocos de Foco (Macro-Tarefas).");
+        return;
+    }
+    
+    currentBunkerBlockIndex = blockIndex;
+    
+    document.getElementById('bunker-title').innerText = block.macro;
+    document.getElementById('bunker-company').innerText = block.companyName;
+    
+    const now = new Date();
+    const currentMins = now.getHours() * 60 + now.getMinutes();
+    let remaining = block.end - currentMins;
+    
+    if(remaining <= 0) remaining = 15; // fallback
+    
+    bunkerMinsRemaining = remaining;
+    bunkerSecsRemaining = 0;
+    
+    renderBunkerSubs(block);
+    updateBunkerDisplay();
+    
+    document.getElementById('bunker-overlay').classList.add('active');
+    
+    if(bunkerInterval) clearInterval(bunkerInterval);
+    bunkerInterval = setInterval(bunkerTick, 1000);
+}
+
+function renderBunkerSubs(block) {
+    const c = document.getElementById('bunker-subs');
+    const task = appData.empresas.find(e => e.id === block.companyId)?.tarefas.find(t => t.id === block.taskId);
+    if(!task || !task.subtarefas || task.subtarefas.length === 0) {
+        c.innerHTML = "";
+        return;
+    }
+    
+    c.innerHTML = task.subtarefas.map(sub => `
+        <div class="bunker-sub-item ${sub.concluida ? 'done' : ''}" onclick="toggleBunkerSubtask('${block.companyId}', '${block.taskId}', '${sub.id}')">
+            <i class="ri-checkbox-${sub.concluida ? 'circle-fill' : 'blank-circle-line'}" style="color:${sub.concluida?'var(--status-caixa)':'var(--text-secondary)'}; font-size:1.5rem;"></i>
+            <span>${sub.titulo}</span>
+        </div>
+    `).join('');
+}
+
+function toggleBunkerSubtask(compId, taskId, subId) {
+    toggleSubtask(compId, taskId, subId);
+    if(currentBunkerBlockIndex !== null) {
+        renderBunkerSubs(appData.activeRoutine[currentBunkerBlockIndex]);
+    }
+}
+
+function bunkerTick() {
+    if(bunkerMinsRemaining === 0 && bunkerSecsRemaining === 0) {
+        clearInterval(bunkerInterval);
+        showToast("⏳ Tempo esgotado! Revise o status (Bunker).");
+        return;
+    }
+    
+    if(bunkerSecsRemaining === 0) {
+        bunkerMinsRemaining--;
+        bunkerSecsRemaining = 59;
+    } else {
+        bunkerSecsRemaining--;
+    }
+    updateBunkerDisplay();
+}
+
+function updateBunkerDisplay() {
+    const el = document.getElementById('bunker-timer');
+    el.innerText = `${bunkerMinsRemaining.toString().padStart(2, '0')}:${bunkerSecsRemaining.toString().padStart(2, '0')}`;
+    
+    if(bunkerMinsRemaining < 5) el.classList.add('danger');
+    else el.classList.remove('danger');
+}
+
+function addTimeBunker(mins) {
+    bunkerMinsRemaining += mins;
+    updateBunkerDisplay();
+    if(!bunkerInterval) bunkerInterval = setInterval(bunkerTick, 1000);
+}
+
+function markBunkerDone() {
+    if(currentBunkerBlockIndex === null) return;
+    const block = appData.activeRoutine[currentBunkerBlockIndex];
+    
+    const cmp = appData.empresas.find(e => e.id === block.companyId);
+    if(cmp) {
+        const t = cmp.tarefas.find(tk => tk.id === block.taskId);
+        if(t && t.estado !== 'concluida') {
+            t.estado = 'concluida';
+            t.dataConclusao = new Date().toISOString();
+            saveData();
+            if(currentView === block.companyId) renderCompanyDetail(block.companyId);
+            else if(currentView === 'dashboard') renderDashboard();
+        }
+    }
+    closeBunker();
+}
+
+function closeBunker() {
+    document.getElementById('bunker-overlay').classList.remove('active');
+    if(bunkerInterval) { clearInterval(bunkerInterval); bunkerInterval = null; }
+    currentBunkerBlockIndex = null;
+}
