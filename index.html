@@ -9,7 +9,7 @@
     <title>CEO OS // Rotina</title>
     <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=6">
+    <link rel="stylesheet" href="style.css?v=7">
 </head>
 <body>
 
@@ -25,6 +25,9 @@
             </div>
 
             <div class="sidebar-footer">
+                <button class="btn full-w" onclick="toggleSpotlight()" style="color:var(--accent); border-color:var(--border-focus); background:rgba(59,130,246,0.1); justify-content:flex-start; margin-bottom:0.5rem; font-weight:700;">
+                    <i class="ri-search-line"></i> Spotlight / Jarvis
+                </button>
                 <button class="btn full-w" onclick="exportSummary()" style="color:var(--text-secondary); border-color:transparent; justify-content:flex-start;">
                     <i class="ri-file-text-line"></i> Exportar Briefing
                 </button>
@@ -231,6 +234,24 @@
             </div>
             
         </main>
+    </div>
+
+    <!-- Spotlight Overlay -->
+    <div class="spotlight-overlay" id="spotlight-overlay" onclick="closeSpotlight(event)">
+        <div class="spotlight-container" onclick="event.stopPropagation()">
+            <div class="spotlight-header">
+                <i class="ri-search-line" style="font-size:1.5rem; color:var(--text-secondary);"></i>
+                <input type="text" id="spotlight-input" placeholder="Buscar tarefas ou digite um comando p/ Jarvis..." autocomplete="off">
+            </div>
+            <div class="spotlight-results" id="spotlight-results">
+                <!-- Resultados Injetados via JS -->
+            </div>
+            <div class="spotlight-footer">
+                <span><kbd>Ctrl</kbd> + <kbd>Espaço</kbd> para abrir</span>
+                <span><kbd>Enter</kbd> para executar comando ou abrir</span>
+                <span><kbd>Esc</kbd> para fechar</span>
+            </div>
+        </div>
     </div>
 
     <!-- Bunker Mode Overlay -->

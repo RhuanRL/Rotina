@@ -1379,5 +1379,150 @@ function markBunkerDone() {
 function closeBunker() {
     document.getElementById('bunker-overlay').classList.remove('active');
     if(bunkerInterval) { clearInterval(bunkerInterval); bunkerInterval = null; }
+
+// ==== SPOTLIGHT MODE ====
+let spotlightResultsData = [];
+let spotlightSelectedIndex = -1;
+
+function toggleSpotlight() {
+    const el = document.getElementById('spotlight-overlay');
+    if (el.classList.contains('active')) {
+        closeSpotlight();
+    } else {
+        el.classList.add('active');
+        const input = document.getElementById('spotlight-input');
+        if(input) {
+            input.value = '';
+            renderSpotlightResults('');
+            setTimeout(() => input.focus(), 50);
+        }
+    }
+}
+
+function closeSpotlight(e) {
+    if (e && e.target.id !== 'spotlight-overlay') return;
+    const el = document.getElementById('spotlight-overlay');
+    if(el) el.classList.remove('active');
+}
+
+document.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.code === 'Space') {
+        e.preventDefault();
+        toggleSpotlight();
+        return;
+    }
+    
+    const overlay = document.getElementById('spotlight-overlay');
+    if (!overlay || !overlay.classList.contains('active')) return;
+    
+    if (e.key === 'Escape') {
+        closeSpotlight();
+    } else if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        if (spotlightSelectedIndex < spotlightResultsData.length - 1) spotlightSelectedIndex++;
+        updateSpotlightSelection();
+    } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        if (spotlightSelectedIndex > -1) spotlightSelectedIndex--;
+        updateSpotlightSelection();
+    } else if (e.key === 'Enter') {
+        e.preventDefault();
+        executeSpotlightAction();
+    }
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+    const spotlightInput = document.getElementById('spotlight-input');
+    if(spotlightInput) {
+        spotlightInput.addEventListener('input', (e) => {
+            renderSpotlightResults(e.target.value);
+        });
+    }
+});
+
+function renderSpotlightResults(query) {
+    const qLower = query.toLowerCase().trim();
+    spotlightResultsData = [];
+    spotlightSelectedIndex = -1;
+    
+    if (qLower.length > 0) {
+        appData.empresas.forEach(comp => {
+            comp.tarefas.forEach(t => {
+                if(t.estado === 'concluida') return;
+                let match = false;
+                if(t.titulo.toLowerCase().includes(qLower)) match = true;
+                if(!match && t.subtarefas) {
+                    if(t.subtarefas.some(s => s.titulo.toLowerCase().includes(qLower))) match = true;
+                }
+                
+                if(match && spotlightResultsData.length < 10) {
+                    spotlightResultsData.push({
+                        type: 'task',
+                        companyId: comp.id,
+                        companyName: comp.nome,
+                        taskId: t.id,
+                        title: t.titulo,
+                        tag: t.tag
+                    });
+                }
+            });
+        });
+    }
+    
+    const container = document.getElementById('spotlight-results');
+    if(!container) return;
+    
+    if(spotlightResultsData.length === 0 && qLower.length > 0) {
+        container.innerHTML = `
+            <div style="padding: 2rem; text-align:center; color:var(--text-secondary);">
+                <i class="ri-robot-line" style="font-size:2.5rem; margin-bottom:1rem; display:block; color:var(--accent);"></i>
+                <div style="font-size:1.1rem; font-weight:600;">Sem resultados exatos.</div>
+                <div style="margin-top:0.5rem; font-size:0.9rem;">Pressione <b>Enter</b> para pedir ao Jarvis para processar:<br/> <span style="color:var(--text-primary);">"${query}"</span></div>
+            </div>
+        `;
+    } else {
+        container.innerHTML = spotlightResultsData.map((res, index) => `
+            <div class="spotlight-item" id="spotlight-item-${index}" onclick="spotlightSelectedIndex=${index}; executeSpotlightAction();" onmouseover="spotlightSelectedIndex=${index}; updateSpotlightSelection(false);">
+                <div class="spotlight-item-left">
+                    <span class="spotlight-item-title">${res.title}</span>
+                    <div class="spotlight-item-meta">
+                        <span style="color:var(--accent);">${res.companyName}</span>
+                        <span>${res.tag}</span>
+                    </div>
+                </div>
+                <!-- <i class="ri-arrow-right-line spotlight-item-icon"></i> -->
+            </div>
+        `).join('');
+    }
+    
+    updateSpotlightSelection();
+}
+
+function updateSpotlightSelection(scroll = true) {
+    document.querySelectorAll('.spotlight-item').forEach((el, index) => {
+        if(index === spotlightSelectedIndex) {
+            el.classList.add('selected');
+            if(scroll) el.scrollIntoView({ block: 'nearest' });
+        } else {
+            el.classList.remove('selected');
+        }
+    });
+}
+
+function executeSpotlightAction() {
+    const inputEl = document.getElementById('spotlight-input');
+    if(!inputEl) return;
+    const input = inputEl.value.trim();
+    
+    if(spotlightSelectedIndex >= 0 && spotlightSelectedIndex < spotlightResultsData.length) {
+        const res = spotlightResultsData[spotlightSelectedIndex];
+        closeSpotlight();
+        renderCompanyDetail(res.companyId);
+        showToast(`Ir para ${res.companyName}`);
+    } else if (input.length > 0) {
+        closeSpotlight();
+        processJarvisCommand(input);
+    }
+}
     currentBunkerBlockIndex = null;
 }
