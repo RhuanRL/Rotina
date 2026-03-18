@@ -226,8 +226,14 @@
         </main>
     </div>
 
+    <!-- Jarvis Mic -->
+    <button class="fab-mic" id="fab-mic" onclick="toggleJarvis()" title="Jarvis: Comando de Voz">
+        <i class="ri-mic-line"></i>
+    </button>
+
     <script>
       if ('serviceWorker' in navigator) {
+
         window.addEventListener('load', () => {
           navigator.serviceWorker.register('./sw.js')
             .then(reg => console.log('Service Worker registrado.', reg))

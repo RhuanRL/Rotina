@@ -1094,10 +1094,126 @@ function toggleHoje(empId, taskId) {
     if(task) { task.hoje = !task.hoje; saveData(); if(currentView === 'dashboard') renderDashboard(); else renderCompanyDetail(empId); }
 }
 
-function deleteTask(empId, taskId) {
-    if(!confirm('Atenção: Excluir a tarefa principal também excluirá suas subtarefas permanentemente. Confirmar?')) return;
-    const comp = appData.empresas.find(c => c.id === empId);
-    if(comp) { comp.tarefas = comp.tarefas.filter(t => t.id !== taskId); saveData(); if(currentView === 'dashboard') renderDashboard(); else renderCompanyDetail(empId); }
+// ---- JARVIS VOICE COMMAND ----
+let recognition;
+let isListening = false;
+
+function initJarvis() {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if(!SpeechRecognition) {
+        alert("API de Reconhecimento de Voz não suportada neste navegador. Tente no Chrome ou Safari.");
+        return;
+    }
+    recognition = new SpeechRecognition();
+    recognition.lang = 'pt-BR';
+    recognition.continuous = false;
+    recognition.interimResults = false;
+
+    recognition.onstart = function() {
+        isListening = true;
+        document.getElementById('fab-mic').classList.add('listening');
+    };
+
+    recognition.onresult = function(event) {
+        const transcript = event.results[0][0].transcript;
+        processJarvisCommand(transcript);
+    };
+
+    recognition.onerror = function(event) {
+        console.error("Erro voz: " + event.error);
+        stopJarvis();
+    };
+
+    recognition.onend = function() {
+        stopJarvis();
+    };
 }
 
-function exportSummary() { alert("Exportação agendada."); }
+function toggleJarvis() {
+    if(!recognition) initJarvis();
+    if(!recognition) return;
+    
+    if(isListening) recognition.stop();
+    else recognition.start();
+}
+
+function stopJarvis() {
+    isListening = false;
+    const btn = document.getElementById('fab-mic');
+    if(btn) btn.classList.remove('listening');
+}
+
+function processJarvisCommand(text) {
+    const lower = text.toLowerCase();
+    
+    let targetEmpId = null;
+    if(/açaí|açai/i.test(lower)) targetEmpId = 'fast-acai';
+    else if(/salgado/i.test(lower)) targetEmpId = 'fast-salgados';
+    else if(/vôlei|volei|voleigo/i.test(lower)) targetEmpId = 'voleigo';
+    else if(/vora|inteligência|ia/i.test(lower)) targetEmpId = 'vora-ai';
+    else if(/rubi|rubby/i.test(lower)) targetEmpId = 'rubby';
+    else if(/tahine|grains/i.test(lower)) targetEmpId = 'fast-grains';
+    else if(/drink|drnk/i.test(lower)) targetEmpId = 'drnk';
+    
+    if(!targetEmpId) {
+        targetEmpId = (currentView !== 'dashboard' && currentView !== 'planner' && currentView !== 'agenda') ? currentView : null;
+    }
+
+    if(!targetEmpId) {
+        alert("Não entendi a empresa. Comando: " + text);
+        return;
+    }
+
+    let targetPrioridade = 'media';
+    let targetTag = 'operacional';
+    let targetHoje = false;
+    
+    if(/urgente|venda|crítico/i.test(lower)) targetPrioridade = 'alta';
+    if(/reunião/i.test(lower)) targetPrioridade = 'media';
+    
+    if(/venda|comercial|prospectar/i.test(lower)) targetTag = 'comercial';
+    else if(/pagamento|pagar|nota|financeiro|caixa|cobrar/i.test(lower)) targetTag = 'financeiro';
+    else if(/estratégia|sócio/i.test(lower)) targetTag = 'estrategico';
+    
+    if(/hoje|agora|urgente/i.test(lower)) targetHoje = true;
+
+    const comp = appData.empresas.find(c => c.id === targetEmpId);
+    if(comp) {
+        const novaTarefa = {
+            id: Date.now().toString(),
+            titulo: text.charAt(0).toUpperCase() + text.slice(1),
+            prioridade: targetPrioridade,
+            tag: targetTag,
+            hoje: targetHoje,
+            estado: "backlog",
+            expandido: false,
+            subtarefas: [],
+            dataCriacao: new Date().toISOString()
+        };
+        comp.tarefas.unshift(novaTarefa);
+        saveData();
+        
+        showToast(`✔ Voz: Adicionado em ${comp.nome}`);
+        
+        if(currentView === targetEmpId) renderCompanyDetail(targetEmpId);
+        else if(currentView === 'dashboard') renderDashboard();
+    }
+}
+
+function showToast(msg) {
+    let t = document.getElementById('jarvis-toast');
+    if(!t) {
+        t = document.createElement('div');
+        t.id = 'jarvis-toast';
+        t.style.position = 'fixed'; t.style.bottom = '100px'; t.style.right = '2rem';
+        t.style.background = 'var(--status-caixa)'; t.style.color = '#fff';
+        t.style.padding = '0.8rem 1.2rem'; t.style.borderRadius = 'var(--radius-sm)';
+        t.style.zIndex = '9999'; t.style.boxShadow = '0 10px 20px rgba(0,0,0,0.5)';
+        t.style.fontWeight = '600'; t.style.transition = 'opacity 0.3s';
+        document.body.appendChild(t);
+    }
+    t.innerHTML = msg;
+    t.style.opacity = '1';
+    setTimeout(() => { t.style.opacity = '0'; }, 3000);
+}
+

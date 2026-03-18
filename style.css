@@ -242,8 +242,26 @@ input::placeholder, textarea::placeholder { color: #475569; }
 .tb-actions button { background: transparent; border: 1px solid var(--border-soft); color: var(--text-secondary); padding: 0.4rem 0.8rem; border-radius: 4px; font-size: 0.75rem; font-weight: 600; cursor: pointer; transition: all 0.2s; }
 .tb-actions button:hover { background: rgba(255,255,255,0.05); color: var(--text-primary); border-color: rgba(255,255,255,0.2); }
 
-.empty-state { padding: 4rem 2rem; text-align: center; color: var(--text-secondary); display: flex; flex-direction: column; align-items: center; gap: 1rem; border: 1px dashed var(--border-soft); border-radius: var(--radius-md); margin-left:2rem; }
-.empty-state i { font-size: 3rem; color: var(--border-soft); }
+.empty-state { text-align:center; padding: 2rem; color:var(--text-secondary); display:flex; flex-direction:column; align-items:center; gap:0.5rem; background:rgba(255,255,255,0.02); border-radius:var(--radius-md); border:1px dashed var(--border-soft); }
+.empty-state i { font-size:2rem; color:var(--text-tertiary); }
+
+/* --- JARVIS VOICE COMMAND --- */
+.fab-mic {
+    position: fixed; bottom: 2rem; right: 2rem;
+    width: 60px; height: 60px; border-radius: 50%;
+    background: var(--accent); color: white;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.5rem; box-shadow: 0 10px 25px rgba(59, 130, 246, 0.4);
+    cursor: pointer; z-index: 9999; border: none;
+    transition: transform 0.2s, background 0.2s;
+}
+.fab-mic:hover { transform: scale(1.05); }
+.fab-mic.listening { animation: pulse-mic 1.5s infinite; background: var(--status-critico); box-shadow: 0 10px 25px rgba(244, 63, 94, 0.4); }
+@keyframes pulse-mic {
+    0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(244, 63, 94, 0.7); }
+    70% { transform: scale(1.1); box-shadow: 0 0 0 15px rgba(244, 63, 94, 0); }
+    100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(244, 63, 94, 0); }
+}
 
 /* Mobile Menu Button */
 .mobile-menu-btn { display: none; background: transparent; border: none; color: var(--text-primary); font-size: 1.2rem; cursor: pointer; padding: 1rem 2rem 0 2rem; }
