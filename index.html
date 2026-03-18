@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#0b0f19">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon.png">
+    <title>CEO OS // Rotina</title>
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div class="app-layout">
+        <!-- Sidebar Navigation -->
+        <nav class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">CEO OS <span class="dimmed">// ROTINA</span></div>
+            </div>
+            
+            <div class="sidebar-nav" id="sidebar-nav">
+                <!-- Dynamically populated -->
+            </div>
+
+            <div class="sidebar-footer">
+                <button class="btn full-w" onclick="exportSummary()" style="color:var(--text-secondary); border-color:transparent; justify-content:flex-start;">
+                    <i class="ri-file-text-line"></i> Exportar Briefing
+                </button>
+                <button class="btn full-w" onclick="forceRestoreFastAcai()" style="color:var(--status-critico); border-color:transparent; justify-content:flex-start; margin-top:0.5rem;">
+                    <i class="ri-refresh-line"></i> Hard Reset (V5)
+                </button>
+            </div>
+        </nav>
+
+        <!-- Main Content Area -->
+        <main class="main-content" id="main-content">
+            <button class="mobile-menu-btn" onclick="document.getElementById('sidebar').classList.toggle('open')">
+                <i class="ri-menu-line"></i> Menu
+            </button>
+
+            <!-- Dashboard Principal -->
+            <div id="view-dashboard" class="view">
+                <div class="header">
+                    <div class="header-top">
+                        <div class="kpi-mini-grid" id="kpi-container">
+                            <!-- Injetado dinamicamente -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tracker de Rotina -->
+                <div class="tracker-card" id="routine-tracker-container" style="display:none;">
+                     <!-- Injetado dinamicamente -->
+                </div>
+
+                <!-- Prioridades e Gargalos -->
+                <div class="focus-card">
+                    <div class="focus-header">
+                        <i class="ri-focus-3-line" style="color:var(--accent); font-size:1.2rem;"></i>
+                        <h3>Foco da Semana</h3>
+                    </div>
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:1.5rem; margin-top:0.5rem;">
+                        <div style="display:flex; flex-direction:column; gap:0.5rem;">
+                            <div style="display:flex; align-items:center; justify-content:space-between;">
+                                <span style="font-size:0.8rem; font-weight:600; color:var(--text-secondary); text-transform:uppercase;">Principal Prioridade</span>
+                                <select id="prioridade-empresa" style="width:auto; padding:0.2rem 0.5rem; font-size:0.75rem; border:none; background:transparent; color:var(--text-secondary); text-align:right;" onchange="saveFields()"></select>
+                            </div>
+                            <input type="text" id="prioridade-semana" placeholder="O que move o ponteiro esta semana?" oninput="saveFields()" style="background:transparent; border:1px solid var(--border-soft); font-size:1.1rem; font-weight:600;">
+                        </div>
+                        <div style="display:flex; flex-direction:column; gap:0.5rem;">
+                            <div style="display:flex; align-items:center; justify-content:space-between;">
+                                <span style="font-size:0.8rem; font-weight:600; color:var(--text-secondary); text-transform:uppercase;">Maior Gargalo / Risco</span>
+                                <select id="gargalo-empresa" style="width:auto; padding:0.2rem 0.5rem; font-size:0.75rem; border:none; background:transparent; color:var(--text-secondary); text-align:right;" onchange="saveFields()"></select>
+                            </div>
+                            <input type="text" id="gargalo-semana" placeholder="Onde está o furo no barco agora?" oninput="saveFields()" style="background:transparent; border:1px solid var(--border-soft); font-size:1.1rem; font-weight:600; color:var(--status-risco);">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section" style="margin-top: 1rem;">
+                    <div class="section-header">
+                        <h2><i class="ri-list-check" style="color:var(--status-caixa);"></i> Módulos de Execução Ativos</h2>
+                        <div class="filters-bar">
+                            <select id="filter-module-empresa" class="filter-select" onchange="renderModules()">
+                                <option value="">Todas as Empresas</option>
+                            </select>
+                            <select id="filter-module-prioridade" class="filter-select" onchange="renderModules()">
+                                <option value="">Todas as Prioridades</option>
+                                <option value="alta">Prioridade Alta</option>
+                                <option value="media">Prioridade Média</option>
+                                <option value="baixa">Prioridade Baixa</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="dashboard-modules-grid" id="dashboard-modules">
+                        <!-- Injetado via JS -->
+                    </div>
+                </div>
+
+                <div class="section" style="margin-top: 2rem;">
+                    <div class="section-header">
+                        <h2 style="font-size:1rem;"><i class="ri-mind-map" style="color:var(--text-secondary);"></i> Decisões Estratégicas Globais</h2>
+                    </div>
+                    <div class="decisions-card">
+                        <div class="decision-list" id="decisions-container">
+                            <!-- Injetado dinamicamente -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Planejador Inteligente -->
+            <div id="view-planner" class="view">
+                <div class="header">
+                    <div class="header-top">
+                        <h2>Planejador Inteligente</h2>
+                    </div>
+                    <p class="dimmed">Distribuição automatizada de blocos focados em rentabilidade e execução realista.</p>
+                </div>
+                
+                <div class="planner-layout">
+                    <!-- Config Panel -->
+                    <div class="planner-config-panel">
+                        <div class="config-section">
+                            <h4>Empresas Foco do Dia</h4>
+                            <div class="company-checkboxes" id="planner-companies-container">
+                                <!-- JS -->
+                            </div>
+                        </div>
+                        <div class="config-section">
+                            <h4>Janela de Produtividade</h4>
+                            <div style="display:flex; gap:1rem;">
+                                <input type="time" id="planner-start" value="09:00">
+                                <span style="align-self:center;color:var(--text-secondary);">até</span>
+                                <input type="time" id="planner-end" value="23:00">
+                            </div>
+                        </div>
+                        <div class="config-section">
+                            <h4>Intensidade da Execução</h4>
+                            <select id="planner-intensity">
+                                <option value="leve">Leve (Muitas pausas)</option>
+                                <option value="normal" selected>Normal (Pausas balanceadas)</option>
+                                <option value="pesado">Pesado (Foco denso)</option>
+                                <option value="extremo">Extremo (Sem piedade)</option>
+                            </select>
+                        </div>
+                        <div class="config-section">
+                            <h4>Prioridade do Dia</h4>
+                            <select id="planner-priority">
+                                <option value="caixa" selected>Caixa (Comercial / Produto)</option>
+                                <option value="urgencia">Urgência (Apagar incêndios)</option>
+                                <option value="estruturacao">Estruturação (Processos / Operação)</option>
+                                <option value="crescimento">Crescimento (Estratégico / Expansão)</option>
+                                <option value="equilibrio">Equilíbrio (Distribuição justa)</option>
+                            </select>
+                        </div>
+                        <button class="btn btn-primary" onclick="generateRoutine()" style="width:100%; justify-content:center; padding:1rem; font-size:1rem; margin-top:1rem;">
+                            <i class="ri-magic-line"></i> Gerar Rotina Sugerida
+                        </button>
+                    </div>
+
+                    <!-- Result Panel -->
+                    <div class="planner-timeline-panel">
+                        <div class="timeline-actions">
+                            <span class="dimmed" id="planner-status-text">Rotina não gerada ainda.</span>
+                            <div style="display:flex; gap:0.5rem;" id="planner-btn-actions" style="display:none;">
+                                <button class="btn-outline" onclick="generateRoutine()"><i class="ri-refresh-line"></i> Recalcular</button>
+                                <button class="btn-primary" onclick="applyPlannerRoutine()" id="btn-apply-planner" style="display:none;"><i class="ri-check-line"></i> Enviar p/ Hoje</button>
+                            </div>
+                        </div>
+                        <div class="premium-timeline" id="planner-timeline-container">
+                            <div class="empty-state">
+                                <i class="ri-calendar-todo-line"></i>
+                                <p>Ajuste as configurações ao lado e clique em Gerar para visualizar a sugestão do motor interno.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Agenda Diária -->
+            <div id="view-agenda" class="view">
+                <div class="header">
+                    <div class="header-top">
+                        <h2>Rotina & Agenda 24h</h2>
+                    </div>
+                </div>
+                
+                <div class="smart-agenda-input-container">
+                    <i class="ri-magic-line" style="color:var(--accent); font-size:1.2rem;"></i>
+                    <input type="text" id="smart-agenda" placeholder="Ex: Reunião com diretoria Fast Açaí às 14h..." onkeypress="handleSmartAgendaEnter(event)">
+                    <button class="btn btn-primary" onclick="addSmartAgenda()" style="padding:0.4rem 1rem;">Agendar</button>
+                </div>
+
+                <div class="agenda-container" id="agenda-container">
+                    <!-- Injetado dinamicamente -->
+                </div>
+            </div>
+
+            <!-- Detalhe da Empresa Específica -->
+            <div id="view-company" class="view">
+                <div id="company-detail-container">
+                    <!-- Injetado dinamicamente -->
+                </div>
+            </div>
+            
+        </main>
+    </div>
+
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('./sw.js')
+            .then(reg => console.log('Service Worker registrado.', reg))
+            .catch(err => console.error('Erro no Service Worker.', err));
+        });
+      }
+    </script>
+    <script src="script.js"></script>
+</body>
+</html>
