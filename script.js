@@ -1179,21 +1179,71 @@ function processJarvisCommand(text) {
 
     const comp = appData.empresas.find(c => c.id === targetEmpId);
     if(comp) {
-        const novaTarefa = {
-            id: Date.now().toString(),
-            titulo: text.charAt(0).toUpperCase() + text.slice(1),
-            prioridade: targetPrioridade,
-            tag: targetTag,
-            hoje: targetHoje,
-            estado: "backlog",
-            expandido: false,
-            subtarefas: [],
-            dataCriacao: new Date().toISOString()
-        };
-        comp.tarefas.unshift(novaTarefa);
-        saveData();
+        let bestScore = 0;
+        let bestMacroId = null;
         
-        showToast(`✔ Voz: Adicionado em ${comp.nome}`);
+        const stopWords = ['o', 'a', 'os', 'as', 'de', 'do', 'da', 'em', 'no', 'na', 'para', 'com', 'um', 'uma', 'e', 'é', 'urgente', 'hoje', 'amanhã', 'agora'];
+        const words = lower.split(/[\s,.'"-]+/).filter(w => w.length > 2 && !stopWords.includes(w));
+
+        comp.tarefas.forEach(t => {
+            if(t.estado === 'concluida') return;
+            let score = 0;
+            const tLower = t.titulo.toLowerCase();
+            
+            words.forEach(w => {
+                if(tLower.includes(w)) score += 3;
+            });
+            
+            if(t.tag === targetTag) score += 1;
+            
+            if(t.subtarefas) {
+                t.subtarefas.forEach(sub => {
+                    const subLower = sub.titulo.toLowerCase();
+                    words.forEach(w => {
+                        if(subLower.includes(w)) score += 1;
+                    });
+                });
+            }
+            
+            if(score > bestScore) {
+                bestScore = score;
+                bestMacroId = t.id;
+            }
+        });
+
+        const novoTitulo = text.charAt(0).toUpperCase() + text.slice(1);
+
+        if(bestMacroId && bestScore >= 3) {
+            const macroPai = comp.tarefas.find(t => t.id === bestMacroId);
+            if(!macroPai.subtarefas) macroPai.subtarefas = [];
+            macroPai.subtarefas.push({
+                id: Date.now().toString(),
+                titulo: novoTitulo,
+                concluida: false
+            });
+            macroPai.expandido = true;
+            if(targetHoje) macroPai.hoje = true;
+            if(macroPai.estado === 'concluida') { macroPai.estado = 'andamento'; delete macroPai.dataConclusao; }
+            if(targetPrioridade === 'alta') macroPai.prioridade = 'alta';
+            
+            saveData();
+            showToast(`✔ Jarvis: Adicionado subtarefa em "${macroPai.titulo.split(' ')[0]}..."`);
+        } else {
+            const novaTarefa = {
+                id: Date.now().toString(),
+                titulo: novoTitulo,
+                prioridade: targetPrioridade,
+                tag: targetTag,
+                hoje: targetHoje,
+                estado: "backlog",
+                expandido: false,
+                subtarefas: [],
+                dataCriacao: new Date().toISOString()
+            };
+            comp.tarefas.unshift(novaTarefa);
+            saveData();
+            showToast(`✔ Voz: Nova Macro-Tarefa em ${comp.nome}`);
+        }
         
         if(currentView === targetEmpId) renderCompanyDetail(targetEmpId);
         else if(currentView === 'dashboard') renderDashboard();
