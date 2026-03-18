@@ -177,13 +177,15 @@ const statusColors = { "critico": "var(--status-critico)", "risco": "var(--statu
 const START_HOUR = 6;
 const END_HOUR = 23; 
 
+let currentAgendaDate = new Date().toISOString().split('T')[0];
+
 document.addEventListener("DOMContentLoaded", () => {
     loadData();
     renderSidebar();
     switchView('dashboard');
     setInterval(() => {
         if(currentView === 'dashboard') renderRoutineTracker();
-    }, 60000);
+    }, 60000); // Check every minute
 });
 
 function loadData() {
@@ -191,6 +193,13 @@ function loadData() {
     if (saved) {
         try {
             appData = JSON.parse(saved);
+            if(appData.agenda && typeof appData.agenda["09:00"] !== 'undefined' && typeof appData.agenda["09:00"] === 'string') {
+                const today = new Date().toISOString().split('T')[0];
+                const oldAgenda = appData.agenda;
+                appData.agenda = {};
+                appData.agenda[today] = oldAgenda;
+                saveData();
+            }
         } catch (e) { console.error("Erro ao ler", e); }
     } else {
         saveData(); 
@@ -272,7 +281,40 @@ function renderDashboard() {
     renderModules();
     renderDecisions();
     renderRoutineTracker();
+    renderConcluidasHoje();
     updateKPIs();
+}
+
+function renderConcluidasHoje() {
+    const container = document.getElementById('concluidas-hoje-container');
+    const section = document.getElementById('section-concluidas-hoje');
+    if(!container || !section) return;
+
+    const today = new Date().toISOString().split('T')[0];
+    let concluidasHoje = [];
+
+    appData.empresas.forEach(emp => {
+        if(emp.tarefas) {
+            const feitasHoje = emp.tarefas.filter(t => t.status === 'concluida' && t.dataConclusao === today);
+            feitasHoje.forEach(t => {
+                concluidasHoje.push({ empresaNome: emp.nome, titulo: t.titulo });
+            });
+        }
+    });
+
+    if(concluidasHoje.length === 0) {
+        section.style.display = 'none';
+        return;
+    }
+
+    section.style.display = 'block';
+    container.innerHTML = concluidasHoje.map(t => `
+        <div style="display:flex; align-items:center; gap:0.5rem; padding:0.5rem; border-bottom:1px solid rgba(255,255,255,0.05); transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.02)'" onmouseout="this.style.background='transparent'">
+            <i class="ri-checkbox-circle-fill" style="color:var(--status-caixa);"></i>
+            <span style="color:var(--text-primary); font-size:0.95rem;">${t.titulo}</span>
+            <span style="font-size:0.75rem; color:var(--text-secondary); background:rgba(255,255,255,0.05); padding:0.2rem 0.5rem; border-radius:12px; margin-left:auto;">${t.empresaNome}</span>
+        </div>
+    `).join('');
 }
 
 function populateFocusSelects() {
@@ -734,45 +776,91 @@ function generateRoutineReport() {
 
 
 // ---- AGENDA 24H VIEW ----
+function changeAgendaDate(days) {
+    const d = new Date(currentAgendaDate + 'T12:00:00');
+    d.setDate(d.getDate() + days);
+    currentAgendaDate = d.toISOString().split('T')[0];
+    document.getElementById('agenda-date-picker').value = currentAgendaDate;
+    renderAgenda();
+}
+
 function handleSmartAgendaEnter(e) {
     if(e.key === 'Enter') { e.preventDefault(); addSmartAgenda(); }
 }
+
 function addSmartAgenda() {
     const input = document.getElementById('smart-agenda');
     const text = input.value.trim();
     if(!text) return;
 
-    const match = text.match(/\b([01]?[0-9]|2[0-3])[:hH]([0-5][0-9])?\b/i);
+    let targetDate = currentAgendaDate;
+    let cleanText = text;
+
+    if(/amanhã|amanha/i.test(text)) {
+        const d = new Date();
+        d.setDate(d.getDate() + 1);
+        targetDate = d.toISOString().split('T')[0];
+        cleanText = text.replace(/amanhã|amanha/gi, '').trim();
+    }
+
+    const match = cleanText.match(/\b([01]?[0-9]|2[0-3])[:hH]([0-5][0-9])?\b/i);
     if(match) {
         let hour = parseInt(match[1]);
         if(hour < 6) hour += 12; 
         if(hour > 23) hour = 23;
         let hourStr = hour.toString().padStart(2, '0') + ':00';
-        let existing = (appData.agenda[hourStr] || "").trim();
-        appData.agenda[hourStr] = existing.length > 0 ? existing + " | " + text : text;
-        input.value = ""; saveData(); renderAgenda();
+        
+        if(!appData.agenda) appData.agenda = {};
+        if(!appData.agenda[targetDate]) appData.agenda[targetDate] = {};
+
+        let existing = (appData.agenda[targetDate][hourStr] || "").trim();
+        appData.agenda[targetDate][hourStr] = existing.length > 0 ? existing + " | " + cleanText : cleanText;
+        
+        input.value = ""; 
+        currentAgendaDate = targetDate;
+        const picker = document.getElementById('agenda-date-picker');
+        if(picker) picker.value = targetDate;
+        
+        saveData(); 
+        renderAgenda();
     } else {
         alert("Não identifiquei a hora! (Ex: '14:30' ou '14h')");
     }
 }
+
 function renderAgenda() {
     const container = document.getElementById('agenda-container');
+    const picker = document.getElementById('agenda-date-picker');
+    if(picker && !picker.value) picker.value = currentAgendaDate;
+    if(picker && picker.value !== currentAgendaDate) {
+        currentAgendaDate = picker.value;
+    }
+
     if(!container) return; container.innerHTML = "";
+    
+    if(!appData.agenda) appData.agenda = {};
+    if(!appData.agenda[currentAgendaDate]) appData.agenda[currentAgendaDate] = {};
+    
+    const dayData = appData.agenda[currentAgendaDate];
+
     for(let h = START_HOUR; h <= END_HOUR; h++) {
         const hourStr = h.toString().padStart(2, '0') + ':00';
-        const val = appData.agenda[hourStr] || "";
+        const val = dayData[hourStr] || "";
         const isFilled = val.trim().length > 0;
         container.innerHTML += `
             <div class="agenda-slot ${isFilled ? 'filled' : ''}">
                 <div class="agenda-time">${hourStr}</div>
-                <input type="text" class="agenda-input" placeholder="Livre..." value="${val}" oninput="updateAgenda('${hourStr}', this.value); this.parentElement.classList.toggle('filled', this.value.trim().length > 0);">
+                <input type="text" class="agenda-input" placeholder="Livre..." value="${val}" oninput="updateAgenda('${currentAgendaDate}', '${hourStr}', this.value); this.parentElement.classList.toggle('filled', this.value.trim().length > 0);">
             </div>
         `;
     }
 }
-function updateAgenda(hourStr, value) {
+
+function updateAgenda(dateStr, hourStr, value) {
     if(!appData.agenda) appData.agenda = {};
-    appData.agenda[hourStr] = value; saveData();
+    if(!appData.agenda[dateStr]) appData.agenda[dateStr] = {};
+    appData.agenda[dateStr][hourStr] = value; 
+    saveData();
 }
 
 // ---- EMPRESA ESPECÍFICA DETAIL VIEW ----
@@ -891,8 +979,9 @@ function toggleSubtask(empId, taskId, subId) {
             sub.concluida = !sub.concluida;
             if(task.subtarefas.every(s => s.concluida) && task.subtarefas.length > 0) {
                 task.estado = "concluida"; task.hoje = false; task.expandido = false;
+                task.dataConclusao = new Date().toISOString().split('T')[0];
             } else {
-                if (task.estado === 'concluida') task.estado = 'andamento';
+                if (task.estado === 'concluida') { task.estado = 'andamento'; delete task.dataConclusao; }
             }
             saveData(); 
             if(currentView === 'dashboard') renderDashboard(); else renderCompanyDetail(empId);
@@ -914,7 +1003,7 @@ function handleAddSubtaskEnter(e, empId, taskId) {
         if(task) {
             if(!task.subtarefas) task.subtarefas = [];
             task.subtarefas.push({ id: Date.now().toString(), titulo: input.value.trim(), concluida: false });
-            if (task.estado === 'concluida') task.estado = 'andamento';
+            if (task.estado === 'concluida') { task.estado = 'andamento'; delete task.dataConclusao; }
             saveData(); renderCompanyDetail(empId);
             setTimeout(() => { document.getElementById(`add-sub-${taskId}`).focus(); }, 50);
         }
@@ -928,7 +1017,15 @@ function deleteSubtask(empId, taskId, subId) {
 
 function toggleConcluidaCompany(empId, taskId) {
     const task = appData.empresas.find(c => c.id === empId)?.tarefas.find(t => t.id === taskId);
-    if(task) { task.estado = "concluida"; task.hoje = false; task.expandido = false; saveData(); if(currentView === empId) renderCompanyDetail(empId); }
+    if(task) { 
+        if(task.estado !== 'concluida') {
+            task.estado = "concluida"; task.hoje = false; task.expandido = false; 
+            task.dataConclusao = new Date().toISOString().split('T')[0];
+        } else {
+            task.estado = "andamento"; delete task.dataConclusao;
+        }
+        saveData(); if(currentView === empId) renderCompanyDetail(empId); else renderDashboard();
+    }
 }
 
 function updateTask(empId, taskId, field, value) {
@@ -941,7 +1038,23 @@ function addTask(empId) {
     const titulo = input.value.trim();
     if(!titulo) return;
     const comp = appData.empresas.find(c => c.id === empId);
-    if(comp) { comp.tarefas.unshift({ id: Date.now().toString(), titulo, prioridade: "media", hoje: true, estado: "backlog", expandido: true, subtarefas: [] }); input.value = ""; saveData(); if(currentView === empId) renderCompanyDetail(empId); }
+    if(comp) { 
+        let targetPrioridade = 'media';
+        let targetTag = 'operacional';
+        let targetHoje = false;
+        const lowerText = titulo.toLowerCase();
+        
+        if(/urgente|cliente|fechar|venda|pagar|crítico|critico/i.test(lowerText)) targetPrioridade = 'alta';
+        if(/venda|comercial|prospect/i.test(lowerText)) targetTag = 'comercial';
+        else if(/pagar|receber|nota|financeiro|caixa/i.test(lowerText)) targetTag = 'financeiro';
+        else if(/estrategia|estratégia|planejar|sócio/i.test(lowerText)) targetTag = 'estrategico';
+        
+        if(/hoje|agora|urgente/i.test(lowerText)) targetHoje = true;
+        if(/amanhã|amanha/i.test(lowerText)) targetHoje = false;
+
+        comp.tarefas.unshift({ id: Date.now().toString(), titulo, prioridade: targetPrioridade, tag: targetTag, hoje: targetHoje, estado: "backlog", expandido: false, subtarefas: [] }); 
+        input.value = ""; saveData(); if(currentView === empId) renderCompanyDetail(empId); 
+    }
 }
 
 function handleTaskEnter(e, empId) {
@@ -958,7 +1071,12 @@ function cycleState(empId, taskId) {
     if(!task) return;
     const states = ["backlog", "andamento", "concluida"];
     task.estado = states[(states.indexOf(task.estado) + 1) % states.length];
-    if(task.estado === 'concluida') { task.hoje = false; task.expandido = false; }
+    if(task.estado === 'concluida') { 
+        task.hoje = false; task.expandido = false; 
+        task.dataConclusao = new Date().toISOString().split('T')[0];
+    } else {
+        delete task.dataConclusao;
+    }
     saveData(); 
     if(currentView === 'dashboard') renderDashboard(); else renderCompanyDetail(empId);
 }

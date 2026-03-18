@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ceo-os-v1';
+const CACHE_NAME = 'ceo-os-v2';
 const urlsToCache = [
   './',
   './index.html',

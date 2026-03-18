@@ -109,6 +109,18 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Tarefas Concluídas Hoje -->
+                <div class="section" style="margin-top: 2rem; display:none;" id="section-concluidas-hoje">
+                    <div class="section-header">
+                        <h2 style="font-size:1rem; color:var(--status-caixa);"><i class="ri-checkbox-circle-line"></i> Troféus do Dia (Concluídas Hoje)</h2>
+                    </div>
+                    <div class="focus-card" style="padding:1rem;">
+                        <div id="concluidas-hoje-container" style="display:flex; flex-direction:column; gap:0.5rem;">
+                            <!-- Injetado JS -->
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- Planejador Inteligente -->
@@ -184,13 +196,18 @@
             <div id="view-agenda" class="view">
                 <div class="header">
                     <div class="header-top">
-                        <h2>Rotina & Agenda 24h</h2>
+                        <h2>Rotina & Agenda</h2>
+                        <div style="display:flex; align-items:center; gap:0.5rem; background:var(--bg-card); border:1px solid var(--border-soft); border-radius:var(--radius-sm); padding:0.2rem 0.5rem;">
+                            <button class="btn" style="border:none; padding:0.4rem; background:transparent;" onclick="changeAgendaDate(-1)"><i class="ri-arrow-left-s-line"></i></button>
+                            <input type="date" id="agenda-date-picker" onchange="renderAgenda()" style="border:none; background:transparent; font-weight:700; width:auto; text-align:center; box-shadow:none; padding:0;">
+                            <button class="btn" style="border:none; padding:0.4rem; background:transparent;" onclick="changeAgendaDate(1)"><i class="ri-arrow-right-s-line"></i></button>
+                        </div>
                     </div>
                 </div>
                 
                 <div class="smart-agenda-input-container">
                     <i class="ri-magic-line" style="color:var(--accent); font-size:1.2rem;"></i>
-                    <input type="text" id="smart-agenda" placeholder="Ex: Reunião com diretoria Fast Açaí às 14h..." onkeypress="handleSmartAgendaEnter(event)">
+                    <input type="text" id="smart-agenda" placeholder="Escreva a tarefa e a hora (Ex: Reunião com diretoria às 14h amanhã)..." onkeypress="handleSmartAgendaEnter(event)">
                     <button class="btn btn-primary" onclick="addSmartAgenda()" style="padding:0.4rem 1rem;">Agendar</button>
                 </div>
 
