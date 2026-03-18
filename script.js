@@ -1379,6 +1379,8 @@ function markBunkerDone() {
 function closeBunker() {
     document.getElementById('bunker-overlay').classList.remove('active');
     if(bunkerInterval) { clearInterval(bunkerInterval); bunkerInterval = null; }
+    currentBunkerBlockIndex = null;
+}
 
 // ==== SPOTLIGHT MODE ====
 let spotlightResultsData = [];
